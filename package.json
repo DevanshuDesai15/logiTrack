@@ -1,0 +1,24 @@
+{
+  "name": "logitrack",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "dev": "lerna run dev --parallel",
+    "build": "lerna run build",
+    "test": "lerna run test",
+    "clean": "lerna clean"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {
+    "lerna": "^8.1.9"
+  }
+}
