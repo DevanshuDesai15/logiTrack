@@ -9,10 +9,11 @@
   ],
   "main": "index.js",
   "scripts": {
-    "dev": "lerna run dev --parallel",
-    "build": "lerna run build",
-    "test": "lerna run test",
-    "clean": "lerna clean"
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present"
   },
   "keywords": [],
   "author": "",
