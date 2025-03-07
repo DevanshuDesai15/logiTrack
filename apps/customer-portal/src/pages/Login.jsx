@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import useAuth from '../hooks/useAuth';
 import {
     Container,
     Box,
@@ -99,7 +99,7 @@ const Login = () => {
                         <Grid item>
                             <Link to="/register" style={{ textDecoration: 'none' }}>
                                 <Typography variant="body2" color="primary">
-                                    Don't have an account? Sign Up
+                                    Don&apos;t have an account? Sign Up
                                 </Typography>
                             </Link>
                         </Grid>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { authService } from '../services/api';
 
 // Create the authentication context
@@ -78,4 +79,12 @@ export const AuthProvider = ({ children }) => {
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}; 
+};
+
+// Add prop validation
+AuthProvider.propTypes = {
+    children: PropTypes.node.isRequired
+};
+
+// Export the context for use in other files
+export default AuthContext; 
