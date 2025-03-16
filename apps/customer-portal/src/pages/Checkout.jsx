@@ -21,7 +21,7 @@ import {
     ListItem,
     ListItemText
 } from '@mui/material';
-import { useAuth } from '../contexts/AuthContext';
+import useAuth from '../hooks/useAuth';
 import orderService from '../services/orderApi';
 
 // Step components

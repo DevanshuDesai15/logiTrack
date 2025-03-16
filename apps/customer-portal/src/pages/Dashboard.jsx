@@ -24,7 +24,7 @@ import {
     Inventory as InventoryIcon,
     Logout as LogoutIcon
 } from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext';
+import useAuth from '../hooks/useAuth';
 import orderService from '../services/orderApi';
 
 const Dashboard = () => {

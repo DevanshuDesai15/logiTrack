@@ -21,7 +21,7 @@ import {
     ArrowBack as ArrowBackIcon
 } from '@mui/icons-material';
 import orderService from '../services/orderApi';
-import { useAuth } from '../contexts/AuthContext';
+import useAuth from '../hooks/useAuth';
 
 // Helper to format date
 const formatDate = (dateString) => {
