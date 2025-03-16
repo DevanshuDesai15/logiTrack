@@ -1,25 +1,22 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import Products from './pages/Products';
-import Cart from './pages/Cart';
-import ProductDetail from './pages/ProductDetail';
-import Checkout from './pages/Checkout';
-import MyOrders from './pages/MyOrders';
+import Inventory from './pages/Inventory';
+import InventoryDetail from './pages/InventoryDetail';
+import Orders from './pages/Orders';
 import OrderDetail from './pages/OrderDetail';
 
-// Create a theme
+// Create a theme with factory/admin colors
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
+      main: '#1e88e5', // Blue shade
     },
     secondary: {
-      main: '#dc004e',
+      main: '#ff3d00', // Orange shade
     },
   },
 });
@@ -33,21 +30,24 @@ function App() {
           <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/products/:id" element={<ProductDetail />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Checkout />} />
 
-            {/* Protected routes */}
+            {/* Protected routes for both admin and subadmin */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/my-orders" element={<MyOrders />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/inventory/:id" element={<InventoryDetail />} />
+              <Route path="/orders" element={<Orders />} />
               <Route path="/orders/:id" element={<OrderDetail />} />
+              {/* Add more protected routes here that both roles can access */}
             </Route>
 
-            {/* Redirect to products if no route matches */}
-            <Route path="*" element={<Navigate to="/products" replace />} />
+            {/* Admin-only routes */}
+            <Route element={<AdminRoute />}>
+              {/* Add admin-only routes here */}
+            </Route>
+
+            {/* Redirect to login if no route matches */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Router>
       </AuthProvider>
