@@ -4,6 +4,10 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute, AdminRoute } from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import Inventory from './pages/Inventory';
+import InventoryDetail from './pages/InventoryDetail';
+import Orders from './pages/Orders';
+import OrderDetail from './pages/OrderDetail';
 
 // Create a theme with factory/admin colors
 const theme = createTheme({
@@ -30,6 +34,10 @@ function App() {
             {/* Protected routes for both admin and subadmin */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/inventory/:id" element={<InventoryDetail />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/orders/:id" element={<OrderDetail />} />
               {/* Add more protected routes here that both roles can access */}
             </Route>
 

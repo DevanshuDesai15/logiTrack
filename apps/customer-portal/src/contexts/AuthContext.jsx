@@ -1,14 +1,9 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { authService } from '../services/api';
 
 // Create the authentication context
 const AuthContext = createContext();
-
-// Custom hook to use the auth context
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
 
 // Auth provider component
 export const AuthProvider = ({ children }) => {
