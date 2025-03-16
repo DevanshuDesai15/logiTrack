@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import {
     Box,
@@ -20,45 +20,110 @@ import {
     DialogContentText,
     DialogTitle,
     Grid,
-    Snackbar
+    Snackbar,
+    Alert,
+    CircularProgress
 } from '@mui/material';
 import {
     Add as AddIcon,
     Remove as RemoveIcon,
     Delete as DeleteIcon,
     ShoppingCart as ShoppingCartIcon,
-    CreditCard as CreditCardIcon
+    CreditCard as CreditCardIcon,
+    ArrowBack as ArrowBackIcon,
+    Sync as SyncIcon
 } from '@mui/icons-material';
 import orderService from '../services/orderApi';
+import { cartService } from '../services/api';
+import api from '../services/api';
 
 const Cart = () => {
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [syncingCart, setSyncingCart] = useState(false);
     const [openDialog, setOpenDialog] = useState(false);
+    const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+    const [orderError, setOrderError] = useState('');
     const [shippingAddress, setShippingAddress] = useState({
         street: '',
         city: '',
         state: '',
         postalCode: '',
-        country: 'United States'
+        country: 'United States',
+        phone: ''
     });
     const [openSnackbar, setOpenSnackbar] = useState(false);
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
 
-    // Load cart from localStorage on component mount
+    // Load cart when component mounts or location changes
     useEffect(() => {
-        const savedCart = JSON.parse(localStorage.getItem('cart')) || [];
-        setCartItems(savedCart);
-    }, []);
+        loadCart();
+    }, [location, isAuthenticated]);
 
-    // Update cart in localStorage when it changes
-    useEffect(() => {
-        localStorage.setItem('cart', JSON.stringify(cartItems));
-    }, [cartItems]);
+    // Load cart data from API or localStorage
+    const loadCart = async () => {
+        setLoading(true);
+        try {
+            if (isAuthenticated()) {
+                // Load cart from API if authenticated
+                const cart = await cartService.getCart();
+                setCartItems(cart.items || []);
+                console.log('Loaded cart from API:', cart);
+            } else {
+                // Load cart from localStorage if not authenticated
+                const savedCart = JSON.parse(localStorage.getItem('cart')) || [];
+                setCartItems(savedCart);
+                console.log('Loaded cart from localStorage:', savedCart);
+            }
+        } catch (error) {
+            console.error('Error loading cart:', error);
+            showSnackbar('Failed to load your cart', 'error');
+            // Fallback to localStorage if API fails
+            const savedCart = JSON.parse(localStorage.getItem('cart')) || [];
+            setCartItems(savedCart);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Sync localStorage cart with database when user logs in
+    const syncCartWithDatabase = async () => {
+        if (!isAuthenticated()) {
+            showSnackbar('You must be logged in to sync your cart', 'warning');
+            return;
+        }
+
+        const localCart = JSON.parse(localStorage.getItem('cart')) || [];
+        if (localCart.length === 0) {
+            showSnackbar('Your local cart is empty', 'info');
+            return;
+        }
+
+        setSyncingCart(true);
+        try {
+            const result = await cartService.syncCart(localCart);
+            setCartItems(result.items || []);
+            localStorage.removeItem('cart'); // Clear localStorage cart after sync
+            showSnackbar('Cart synchronized successfully', 'success');
+        } catch (error) {
+            console.error('Error syncing cart:', error);
+            showSnackbar('Failed to sync your cart', 'error');
+        } finally {
+            setSyncingCart(false);
+        }
+    };
+
+    // Save cart to localStorage (only needed for non-authenticated users)
+    const saveCartToLocalStorage = (items) => {
+        if (!isAuthenticated()) {
+            localStorage.setItem('cart', JSON.stringify(items));
+        }
+    };
 
     // Calculate total price
     const totalPrice = cartItems.reduce(
@@ -67,30 +132,78 @@ const Cart = () => {
     );
 
     // Handle quantity increase
-    const handleIncreaseQuantity = (id) => {
-        setCartItems(
-            cartItems.map(item =>
-                item._id === id
-                    ? { ...item, quantity: item.quantity + 1 }
-                    : item
-            )
-        );
+    const handleIncreaseQuantity = async (id) => {
+        try {
+            if (isAuthenticated()) {
+                // Update via API if authenticated
+                const item = cartItems.find(item => item.product?._id === id || item._id === id);
+                const quantity = item.quantity + 1;
+                const productId = item.product?._id || id;
+                await cartService.updateCartItem(productId, quantity);
+                await loadCart(); // Reload cart from API
+            } else {
+                // Update locally if not authenticated
+                const updatedCart = cartItems.map(item =>
+                    (item._id === id || item.product?._id === id)
+                        ? { ...item, quantity: item.quantity + 1 }
+                        : item
+                );
+                setCartItems(updatedCart);
+                saveCartToLocalStorage(updatedCart);
+            }
+        } catch (error) {
+            console.error('Error increasing quantity:', error);
+            showSnackbar('Failed to update quantity', 'error');
+        }
     };
 
     // Handle quantity decrease
-    const handleDecreaseQuantity = (id) => {
-        setCartItems(
-            cartItems.map(item =>
-                item._id === id && item.quantity > 1
-                    ? { ...item, quantity: item.quantity - 1 }
-                    : item
-            )
-        );
+    const handleDecreaseQuantity = async (id) => {
+        try {
+            const item = cartItems.find(item => item.product?._id === id || item._id === id);
+            if (!item || item.quantity <= 1) return;
+
+            if (isAuthenticated()) {
+                // Update via API if authenticated
+                const quantity = item.quantity - 1;
+                const productId = item.product?._id || id;
+                await cartService.updateCartItem(productId, quantity);
+                await loadCart(); // Reload cart from API
+            } else {
+                // Update locally if not authenticated
+                const updatedCart = cartItems.map(item =>
+                    (item._id === id || item.product?._id === id) && item.quantity > 1
+                        ? { ...item, quantity: item.quantity - 1 }
+                        : item
+                );
+                setCartItems(updatedCart);
+                saveCartToLocalStorage(updatedCart);
+            }
+        } catch (error) {
+            console.error('Error decreasing quantity:', error);
+            showSnackbar('Failed to update quantity', 'error');
+        }
     };
 
     // Handle item removal
-    const handleRemoveItem = (id) => {
-        setCartItems(cartItems.filter(item => item._id !== id));
+    const handleRemoveItem = async (id) => {
+        try {
+            if (isAuthenticated()) {
+                // Remove via API if authenticated
+                const productId = cartItems.find(item => item.product?._id === id || item._id === id)?.product?._id || id;
+                await cartService.removeCartItem(productId);
+                await loadCart(); // Reload cart from API
+            } else {
+                // Remove locally if not authenticated
+                const updatedCart = cartItems.filter(item => item._id !== id && item.product?._id !== id);
+                setCartItems(updatedCart);
+                saveCartToLocalStorage(updatedCart);
+            }
+            showSnackbar('Item removed from cart', 'success');
+        } catch (error) {
+            console.error('Error removing item:', error);
+            showSnackbar('Failed to remove item', 'error');
+        }
     };
 
     // Handle checkout click
@@ -98,12 +211,12 @@ const Cart = () => {
         if (!isAuthenticated()) {
             // Redirect to login if not authenticated
             showSnackbar('Please login to checkout', 'info');
-            navigate('/login', { state: { from: '/checkout' } });
+            navigate('/login', { state: { from: '/cart' } });
             return;
         }
 
-        // Navigate to checkout page
-        navigate('/checkout');
+        // Open the checkout dialog instead of navigating
+        setOpenDialog(true);
     };
 
     // Handle shipping address change
@@ -115,6 +228,36 @@ const Cart = () => {
         });
     };
 
+    // Initialize shipping address with user data if available
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            if (isAuthenticated() && user) {
+                try {
+                    // Try to get customer profile data
+                    const response = await api.get('/auth/profile');
+
+                    if (response.data) {
+                        const userData = response.data;
+                        if (userData.address) {
+                            setShippingAddress({
+                                street: userData.address.street || '',
+                                city: userData.address.city || '',
+                                state: userData.address.state || '',
+                                postalCode: userData.address.postalCode || '',
+                                country: userData.address.country || 'United States',
+                                phone: userData.phone || ''
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch user profile:', error);
+                }
+            }
+        };
+
+        fetchUserProfile();
+    }, [user, isAuthenticated]);
+
     // Handle closing the dialog
     const handleCloseDialog = () => {
         setOpenDialog(false);
@@ -122,44 +265,64 @@ const Cart = () => {
 
     // Handle order submission
     const handleSubmitOrder = async () => {
-        // Validate shipping address
-        if (!shippingAddress.street || !shippingAddress.city ||
-            !shippingAddress.state || !shippingAddress.postalCode) {
-            showSnackbar('Please fill all address fields', 'error');
-            return;
-        }
-
-        setLoading(true);
         try {
-            // Prepare order data
+            if (!isAuthenticated()) {
+                navigate('/login');
+                return;
+            }
+
+            // Validate shipping address
+            if (!shippingAddress.street || !shippingAddress.city ||
+                !shippingAddress.state || !shippingAddress.postalCode || !shippingAddress.phone) {
+                setSnackbarMessage('Please fill all required address fields');
+                setSnackbarSeverity('error');
+                setOpenSnackbar(true);
+                return;
+            }
+
+            setIsSubmittingOrder(true);
             const orderData = {
                 orderItems: cartItems.map(item => ({
-                    product: item._id,
-                    name: item.name,
+                    product: item.product?._id || item._id,
+                    name: item.name || '',
                     quantity: item.quantity,
                     price: item.price
                 })),
-                shippingAddress,
-                paymentMethod: 'Credit Card', // Hardcoded for now
-                totalPrice,
+                shippingAddress: {
+                    ...shippingAddress,
+                    phone: shippingAddress.phone || ''
+                },
+                paymentMethod: 'Credit Card',
+                userId: user?._id,
+                customerName: user?.name || '',
+                customerEmail: user?.email || '',
+                totalPrice: totalPrice
             };
 
-            await orderService.createOrder(orderData);
+            console.log('Submitting order data:', orderData);
 
-            // Clear cart
-            setCartItems([]);
-            localStorage.removeItem('cart');
+            const order = await orderService.createOrder(orderData);
 
-            showSnackbar('Order placed successfully!', 'success');
-            handleCloseDialog();
-
-            // Redirect to orders page
-            navigate('/orders');
-        } catch (err) {
-            showSnackbar('Failed to place order', 'error');
-            console.error(err);
+            if (order) {
+                localStorage.removeItem('cart');
+                setCartItems([]);
+                setOpenDialog(false);
+                setOpenSnackbar(true);
+                setSnackbarMessage('Order placed successfully');
+                setSnackbarSeverity('success');
+                navigate('/my-orders');
+            }
+        } catch (error) {
+            console.error('Failed to place order:', error);
+            if (error.response) {
+                console.error('Error response:', error.response.data);
+            }
+            setOrderError(error.response?.data?.message || 'Failed to place order. Please try again.');
+            setSnackbarMessage('Failed to place order: ' + (error.response?.data?.message || 'Please try again.'));
+            setSnackbarSeverity('error');
+            setOpenSnackbar(true);
         } finally {
-            setLoading(false);
+            setIsSubmittingOrder(false);
         }
     };
 
@@ -180,13 +343,59 @@ const Cart = () => {
         navigate('/products');
     };
 
+    // Get product ID helper function
+    const getProductId = (item) => {
+        return item.product?._id || item._id;
+    };
+
+    // Get product name helper function
+    const getProductName = (item) => {
+        return item.name;
+    };
+
     return (
         <Box sx={{ p: 3 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
-                Shopping Cart
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h4" component="h1">
+                    Shopping Cart
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    {!isAuthenticated() && JSON.parse(localStorage.getItem('cart') || '[]').length > 0 && (
+                        <Button
+                            variant="outlined"
+                            color="secondary"
+                            startIcon={<SyncIcon />}
+                            onClick={() => navigate('/login', { state: { from: '/cart' } })}
+                        >
+                            Login to Save Cart
+                        </Button>
+                    )}
+                    {isAuthenticated() && JSON.parse(localStorage.getItem('cart') || '[]').length > 0 && (
+                        <Button
+                            variant="outlined"
+                            color="secondary"
+                            startIcon={<SyncIcon />}
+                            onClick={syncCartWithDatabase}
+                            disabled={syncingCart}
+                        >
+                            {syncingCart ? 'Syncing...' : 'Sync Local Cart'}
+                        </Button>
+                    )}
+                    <Button
+                        variant="outlined"
+                        startIcon={<ArrowBackIcon />}
+                        onClick={handleContinueShopping}
+                    >
+                        Continue Shopping
+                    </Button>
+                </Box>
+            </Box>
 
-            {cartItems.length === 0 ? (
+            {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
+                    <CircularProgress />
+                </Box>
+            ) : cartItems.length === 0 ? (
                 <Paper sx={{ p: 4, textAlign: 'center' }}>
                     <ShoppingCartIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>
@@ -217,14 +426,14 @@ const Cart = () => {
                             </TableHead>
                             <TableBody>
                                 {cartItems.map((item) => (
-                                    <TableRow key={item._id}>
-                                        <TableCell>{item.name}</TableCell>
+                                    <TableRow key={getProductId(item)}>
+                                        <TableCell>{getProductName(item)}</TableCell>
                                         <TableCell align="right">${item.price.toFixed(2)}</TableCell>
                                         <TableCell align="center">
                                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <IconButton
                                                     size="small"
-                                                    onClick={() => handleDecreaseQuantity(item._id)}
+                                                    onClick={() => handleDecreaseQuantity(getProductId(item))}
                                                     disabled={item.quantity <= 1}
                                                 >
                                                     <RemoveIcon fontSize="small" />
@@ -234,7 +443,7 @@ const Cart = () => {
                                                 </Typography>
                                                 <IconButton
                                                     size="small"
-                                                    onClick={() => handleIncreaseQuantity(item._id)}
+                                                    onClick={() => handleIncreaseQuantity(getProductId(item))}
                                                 >
                                                     <AddIcon fontSize="small" />
                                                 </IconButton>
@@ -246,7 +455,7 @@ const Cart = () => {
                                         <TableCell align="center">
                                             <IconButton
                                                 color="error"
-                                                onClick={() => handleRemoveItem(item._id)}
+                                                onClick={() => handleRemoveItem(getProductId(item))}
                                                 size="small"
                                             >
                                                 <DeleteIcon />
@@ -303,6 +512,16 @@ const Cart = () => {
                                 label="Street Address"
                                 fullWidth
                                 value={shippingAddress.street}
+                                onChange={handleAddressChange}
+                                required
+                            />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                            <TextField
+                                name="phone"
+                                label="Phone Number"
+                                fullWidth
+                                value={shippingAddress.phone || ''}
                                 onChange={handleAddressChange}
                                 required
                             />
@@ -368,9 +587,9 @@ const Cart = () => {
                     <Button
                         onClick={handleSubmitOrder}
                         variant="contained"
-                        disabled={loading}
+                        disabled={isSubmittingOrder}
                     >
-                        {loading ? 'Processing...' : 'Place Order'}
+                        {isSubmittingOrder ? 'Processing...' : 'Place Order'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -380,11 +599,18 @@ const Cart = () => {
                 open={openSnackbar}
                 autoHideDuration={6000}
                 onClose={handleCloseSnackbar}
-                message={snackbarMessage}
-                severity={snackbarSeverity}
-            />
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert
+                    onClose={handleCloseSnackbar}
+                    severity={snackbarSeverity}
+                    sx={{ width: '100%' }}
+                >
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };
 
-export default Cart; 
+export default Cart;

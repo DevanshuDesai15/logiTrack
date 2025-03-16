@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
     Container,
@@ -17,16 +17,21 @@ import {
     ListItemIcon,
     ListItemText,
     Divider,
-    Badge
+    Badge,
+    Grid
 } from '@mui/material';
 import {
     AccountCircle,
     Menu as MenuIcon,
     Dashboard as DashboardIcon,
+    Inventory as InventoryIcon,
+    ShoppingCart as ShoppingCartIcon,
     People as PeopleIcon,
     Settings as SettingsIcon,
     Logout as LogoutIcon
 } from '@mui/icons-material';
+import CustomerStatistics from '../components/CustomerStatistics';
+import InventoryStatistics from '../components/InventoryStatistics';
 
 const drawerWidth = 240;
 
@@ -54,6 +59,11 @@ const Dashboard = () => {
     const handleLogout = () => {
         logout();
         navigate('/login');
+    };
+
+    // Navigate to specific sections
+    const navigateTo = (path) => {
+        navigate(path);
     };
 
     if (!admin) {
@@ -128,11 +138,23 @@ const Dashboard = () => {
                 <Toolbar />
                 <Box sx={{ overflow: 'auto' }}>
                     <List>
-                        <ListItem button>
+                        <ListItem button component={Link} to="/dashboard">
                             <ListItemIcon>
                                 <DashboardIcon />
                             </ListItemIcon>
                             <ListItemText primary="Dashboard" />
+                        </ListItem>
+                        <ListItem button component={Link} to="/inventory">
+                            <ListItemIcon>
+                                <InventoryIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Inventory" />
+                        </ListItem>
+                        <ListItem button component={Link} to="/orders">
+                            <ListItemIcon>
+                                <ShoppingCartIcon />
+                            </ListItemIcon>
+                            <ListItemText primary="Orders" />
                         </ListItem>
                         <ListItem button>
                             <ListItemIcon>
@@ -166,7 +188,7 @@ const Dashboard = () => {
 
             <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
                 <Toolbar />
-                <Paper sx={{ p: 3, mt: 3 }}>
+                <Paper sx={{ p: 3, mb: 4 }}>
                     <Typography variant="h5" gutterBottom color="primary">
                         Welcome, {admin.name}!
                     </Typography>
@@ -174,7 +196,7 @@ const Dashboard = () => {
                         Role: {admin.role.toUpperCase()}
                     </Typography>
                     <Typography paragraph sx={{ mt: 2 }}>
-                        You are logged in to the factory portal. This is your dashboard.
+                        This dashboard provides an overview of your factory operations, inventory status, and customer orders.
                     </Typography>
                     {isAdmin() && (
                         <Typography paragraph sx={{ fontWeight: 'bold', color: 'secondary.main' }}>
@@ -187,9 +209,21 @@ const Dashboard = () => {
                         </Typography>
                     )}
                 </Paper>
+
+                <Grid container spacing={4}>
+                    {/* Inventory Statistics */}
+                    <Grid item xs={12}>
+                        <InventoryStatistics />
+                    </Grid>
+
+                    {/* Customer Statistics */}
+                    <Grid item xs={12}>
+                        <CustomerStatistics />
+                    </Grid>
+                </Grid>
             </Box>
         </Box>
     );
 };
 
-export default Dashboard;
+export default Dashboard; 

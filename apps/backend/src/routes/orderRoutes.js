@@ -16,7 +16,7 @@ router.post('/', protect, createOrder);
 // Get all orders (admin only)
 router.get('/', protect, authorize(['admin', 'subadmin', 'operator']), getOrders);
 
-// Get user's own orders
+// Get user's own orders - ensure this has protect middleware but doesn't need specific role
 router.get('/my-orders', protect, getUserOrders);
 
 // Get order by ID

@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import cartRoutes from './routes/cartRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Home route
 app.get('/', (req, res) => {

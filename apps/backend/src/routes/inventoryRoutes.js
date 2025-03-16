@@ -12,11 +12,11 @@ import { protect, adminOnly, authorize } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-// Get all inventory items
-router.get('/', protect, authorize(['admin', 'subadmin', 'operator']), getInventory);
+// Get all inventory items - public access for customer portal
+router.get('/', getInventory);
 
-// Get inventory item by ID
-router.get('/:id', protect, authorize(['admin', 'subadmin', 'operator']), getInventoryById);
+// Get inventory item by ID - public access for customer portal
+router.get('/:id', getInventoryById);
 
 // Create new inventory item
 router.post('/', protect, adminOnly, createInventoryItem);

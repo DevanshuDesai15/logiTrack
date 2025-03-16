@@ -46,7 +46,12 @@ const Dashboard = () => {
             setRecentOrders(data.slice(0, 3)); // Get only 3 most recent orders
             setError(null);
         } catch (err) {
-            setError('Failed to fetch recent orders');
+            // Check if this is a 404 error (no customer profile)
+            if (err.response && err.response.status === 404 && err.response.data.message === 'Customer record not found') {
+                setError('Please complete your customer profile to view orders');
+            } else {
+                setError('Failed to fetch recent orders');
+            }
             console.error(err);
         } finally {
             setLoading(false);
@@ -181,7 +186,6 @@ const Dashboard = () => {
                                 size="small"
                                 color="primary"
                                 fullWidth
-                                disabled
                             >
                                 View Profile
                             </Button>
@@ -218,7 +222,7 @@ const Dashboard = () => {
                                         </Grid>
                                         <Grid item xs={6} sm={3}>
                                             <ListItemText
-                                                primary={`${order.items.length} item(s)`}
+                                                primary={`${(order.orderItems || []).length} item(s)`}
                                                 secondary="Quantity"
                                             />
                                         </Grid>
@@ -268,7 +272,7 @@ const Dashboard = () => {
                 )}
             </Paper>
 
-            {/* View All Orders Button */}
+            {/* View All Orders Button - only show if there are orders */}
             {recentOrders.length > 0 && (
                 <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
                     <Button
