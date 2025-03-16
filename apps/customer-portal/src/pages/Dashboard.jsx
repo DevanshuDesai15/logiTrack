@@ -253,7 +253,7 @@ const Dashboard = () => {
                 ) : (
                     <Box sx={{ p: 3, textAlign: 'center' }}>
                         <Typography variant="body1" color="text.secondary" gutterBottom>
-                            You haven't placed any orders yet.
+                            You haven&apos;t placed any orders yet.
                         </Typography>
                         <Button
                             component={RouterLink}

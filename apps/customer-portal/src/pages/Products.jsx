@@ -44,7 +44,7 @@ const Products = () => {
     // Update filtered products when filters change
     useEffect(() => {
         filterProducts();
-    }, [products, selectedCategory, searchTerm]);
+    }, [products, selectedCategory, searchTerm, filterProducts]);
 
     // Fetch all products
     const fetchProducts = async () => {

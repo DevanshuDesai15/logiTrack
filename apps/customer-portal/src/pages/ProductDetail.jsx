@@ -36,7 +36,7 @@ const ProductDetail = () => {
     // Fetch product details on component mount
     useEffect(() => {
         fetchProduct();
-    }, [id]);
+    }, [id, fetchProduct]);
 
     // Fetch product by ID
     const fetchProduct = async () => {

@@ -14,8 +14,7 @@ import {
     Button,
     Chip,
     CircularProgress,
-    Alert,
-    Divider
+    Alert
 } from '@mui/material';
 import {
     Visibility as VisibilityIcon,
@@ -106,7 +105,7 @@ const MyOrders = () => {
             {orders.length === 0 ? (
                 <Paper sx={{ p: 4, textAlign: 'center' }}>
                     <Typography variant="h6" gutterBottom>
-                        You haven't placed any orders yet
+                        You haven&apos;t placed any orders yet
                     </Typography>
                     <Button
                         component={RouterLink}

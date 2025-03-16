@@ -73,7 +73,7 @@ const OrderDetail = () => {
     // Fetch order details on component mount
     useEffect(() => {
         fetchOrder();
-    }, [id]);
+    }, [id, fetchOrder]);
 
     // Fetch order by ID
     const fetchOrder = async () => {

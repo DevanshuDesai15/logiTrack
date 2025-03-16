@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PropTypes from 'prop-types';
 import {
     Box,
     Container,
@@ -158,6 +159,22 @@ const ShippingForm = ({ formData, setFormData, errors }) => {
     );
 };
 
+ShippingForm.propTypes = {
+    formData: PropTypes.shape({
+        firstName: PropTypes.string,
+        lastName: PropTypes.string,
+        address1: PropTypes.string,
+        address2: PropTypes.string,
+        city: PropTypes.string,
+        state: PropTypes.string,
+        zip: PropTypes.string,
+        country: PropTypes.string,
+        phone: PropTypes.string
+    }).isRequired,
+    setFormData: PropTypes.func.isRequired,
+    errors: PropTypes.object.isRequired
+};
+
 const PaymentForm = ({ formData, setFormData, errors }) => {
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -231,6 +248,17 @@ const PaymentForm = ({ formData, setFormData, errors }) => {
     );
 };
 
+PaymentForm.propTypes = {
+    formData: PropTypes.shape({
+        cardName: PropTypes.string,
+        cardNumber: PropTypes.string,
+        expDate: PropTypes.string,
+        cvv: PropTypes.string
+    }).isRequired,
+    setFormData: PropTypes.func.isRequired,
+    errors: PropTypes.object.isRequired
+};
+
 const Review = ({ cartItems, shippingAddress, totalPrice }) => {
     return (
         <Box sx={{ mt: 2 }}>
@@ -275,6 +303,29 @@ const Review = ({ cartItems, shippingAddress, totalPrice }) => {
             <Typography gutterBottom>{shippingAddress.phone}</Typography>
         </Box>
     );
+};
+
+Review.propTypes = {
+    cartItems: PropTypes.arrayOf(
+        PropTypes.shape({
+            _id: PropTypes.string.isRequired,
+            name: PropTypes.string.isRequired,
+            price: PropTypes.number.isRequired,
+            quantity: PropTypes.number.isRequired
+        })
+    ).isRequired,
+    shippingAddress: PropTypes.shape({
+        firstName: PropTypes.string.isRequired,
+        lastName: PropTypes.string.isRequired,
+        address1: PropTypes.string.isRequired,
+        address2: PropTypes.string,
+        city: PropTypes.string.isRequired,
+        state: PropTypes.string.isRequired,
+        zip: PropTypes.string.isRequired,
+        country: PropTypes.string.isRequired,
+        phone: PropTypes.string.isRequired
+    }).isRequired,
+    totalPrice: PropTypes.number.isRequired
 };
 
 const steps = ['Shipping address', 'Payment details', 'Review your order'];

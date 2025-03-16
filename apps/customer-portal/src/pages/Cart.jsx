@@ -14,8 +14,6 @@ import {
     TableRow,
     IconButton,
     TextField,
-    Divider,
-    Alert,
     Dialog,
     DialogActions,
     DialogContent,
@@ -48,7 +46,7 @@ const Cart = () => {
     const [snackbarMessage, setSnackbarMessage] = useState('');
     const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
-    const { user, isAuthenticated } = useAuth();
+    const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
 
     // Load cart from localStorage on component mount
@@ -115,6 +113,11 @@ const Cart = () => {
             ...shippingAddress,
             [name]: value
         });
+    };
+
+    // Handle closing the dialog
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
     };
 
     // Handle order submission
@@ -190,7 +193,7 @@ const Cart = () => {
                         Your cart is empty
                     </Typography>
                     <Typography variant="body1" color="text.secondary" paragraph>
-                        Looks like you haven't added any products to your cart yet.
+                        Looks like you haven&apos;t added any products to your cart yet.
                     </Typography>
                     <Button
                         variant="contained"
