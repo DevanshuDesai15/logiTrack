@@ -189,4 +189,29 @@ export const updateOrderStatus = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: 'Server error' });
   }
+};
+
+/**
+ * Get orders for the authenticated user
+ * @route GET /api/orders/my-orders
+ * @access Private
+ */
+export const getUserOrders = async (req, res) => {
+  try {
+    // Find customer record for the current user
+    const customer = await Customer.findOne({ user: req.user._id });
+    
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer record not found' });
+    }
+    
+    // Find all orders for this customer
+    const orders = await Order.find({ customer: customer._id })
+      .sort('-createdAt');
+    
+    res.json(orders);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
 }; 

@@ -3,7 +3,8 @@ import {
   createOrder,
   getOrders,
   getOrderById,
-  updateOrderStatus
+  updateOrderStatus,
+  getUserOrders
 } from '../controllers/orderController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
 
@@ -12,8 +13,11 @@ const router = express.Router();
 // Create a new order
 router.post('/', protect, createOrder);
 
-// Get all orders
+// Get all orders (admin only)
 router.get('/', protect, authorize(['admin', 'subadmin', 'operator']), getOrders);
+
+// Get user's own orders
+router.get('/my-orders', protect, getUserOrders);
 
 // Get order by ID
 router.get('/:id', protect, getOrderById);
