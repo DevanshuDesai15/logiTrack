@@ -72,23 +72,23 @@ const OrderDetail = () => {
 
     // Fetch order details on component mount
     useEffect(() => {
-        fetchOrder();
-    }, [id, fetchOrder]);
+        // Fetch order by ID
+        const fetchOrder = async () => {
+            setLoading(true);
+            try {
+                const data = await orderService.getOrderById(id);
+                setOrder(data);
+                setError(null);
+            } catch (err) {
+                setError('Failed to fetch order details');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    // Fetch order by ID
-    const fetchOrder = async () => {
-        setLoading(true);
-        try {
-            const data = await orderService.getOrderById(id);
-            setOrder(data);
-            setError(null);
-        } catch (err) {
-            setError('Failed to fetch order details');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+        fetchOrder();
+    }, [id]);
 
     // Handle go back
     const handleGoBack = () => {

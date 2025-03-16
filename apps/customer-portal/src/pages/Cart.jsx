@@ -381,6 +381,7 @@ const Cart = () => {
                 autoHideDuration={6000}
                 onClose={handleCloseSnackbar}
                 message={snackbarMessage}
+                severity={snackbarSeverity}
             />
         </Box>
     );

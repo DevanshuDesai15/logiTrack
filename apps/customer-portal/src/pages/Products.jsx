@@ -43,8 +43,29 @@ const Products = () => {
 
     // Update filtered products when filters change
     useEffect(() => {
+        // Filter products based on search and category
+        const filterProducts = () => {
+            let filtered = [...products];
+
+            // Apply category filter
+            if (selectedCategory) {
+                filtered = filtered.filter(product => product.category === selectedCategory);
+            }
+
+            // Apply search filter
+            if (searchTerm.trim()) {
+                const term = searchTerm.toLowerCase();
+                filtered = filtered.filter(product =>
+                    product.name.toLowerCase().includes(term) ||
+                    (product.description && product.description.toLowerCase().includes(term))
+                );
+            }
+
+            setFilteredProducts(filtered);
+        };
+
         filterProducts();
-    }, [products, selectedCategory, searchTerm, filterProducts]);
+    }, [products, selectedCategory, searchTerm]);
 
     // Fetch all products
     const fetchProducts = async () => {
@@ -68,27 +89,6 @@ const Products = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    // Filter products based on search and category
-    const filterProducts = () => {
-        let filtered = [...products];
-
-        // Apply category filter
-        if (selectedCategory) {
-            filtered = filtered.filter(product => product.category === selectedCategory);
-        }
-
-        // Apply search filter
-        if (searchTerm.trim()) {
-            const term = searchTerm.toLowerCase();
-            filtered = filtered.filter(product =>
-                product.name.toLowerCase().includes(term) ||
-                (product.description && product.description.toLowerCase().includes(term))
-            );
-        }
-
-        setFilteredProducts(filtered);
     };
 
     // Handle category change

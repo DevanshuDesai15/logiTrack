@@ -35,23 +35,23 @@ const ProductDetail = () => {
 
     // Fetch product details on component mount
     useEffect(() => {
-        fetchProduct();
-    }, [id, fetchProduct]);
+        // Fetch product by ID
+        const fetchProduct = async () => {
+            setLoading(true);
+            try {
+                const data = await productService.getProductById(id);
+                setProduct(data);
+                setError(null);
+            } catch (err) {
+                setError('Failed to fetch product details');
+                console.error(err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    // Fetch product by ID
-    const fetchProduct = async () => {
-        setLoading(true);
-        try {
-            const data = await productService.getProductById(id);
-            setProduct(data);
-            setError(null);
-        } catch (err) {
-            setError('Failed to fetch product details');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+        fetchProduct();
+    }, [id]);
 
     // Handle quantity change
     const handleQuantityChange = (e) => {
