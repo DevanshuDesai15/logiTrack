@@ -11,6 +11,8 @@ import ProductDetail from './pages/ProductDetail';
 import Checkout from './pages/Checkout';
 import MyOrders from './pages/MyOrders';
 import OrderDetail from './pages/OrderDetail';
+import Profile from './pages/Profile';
+import NotFound from './pages/NotFound';
 
 // Create a theme
 const theme = createTheme({
@@ -44,10 +46,14 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/my-orders" element={<MyOrders />} />
               <Route path="/orders/:id" element={<OrderDetail />} />
+              <Route path="/profile" element={<Profile />} />
             </Route>
 
-            {/* Redirect to products if no route matches */}
-            <Route path="*" element={<Navigate to="/products" replace />} />
+            {/* Home page redirect */}
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+            {/* 404 page for all other routes */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </Router>
       </AuthProvider>

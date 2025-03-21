@@ -172,18 +172,18 @@ const OrderDetail = () => {
                             Order Items
                         </Typography>
                         <List disablePadding>
-                            {order.items.map((item, index) => (
+                            {order.orderItems.map((item, index) => (
                                 <Box key={index}>
                                     <ListItem sx={{ py: 2, px: 0 }}>
                                         <ListItemText
-                                            primary={item.productName || `Product ID: ${item.productId}`}
+                                            primary={item.name || `Product ID: ${item.product}`}
                                             secondary={`Qty: ${item.quantity}`}
                                         />
                                         <Typography variant="body1">
                                             ${(item.price * item.quantity).toFixed(2)}
                                         </Typography>
                                     </ListItem>
-                                    {index < order.items.length - 1 && <Divider />}
+                                    {index < order.orderItems.length - 1 && <Divider />}
                                 </Box>
                             ))}
                         </List>
@@ -232,11 +232,10 @@ const OrderDetail = () => {
                             {order.shippingAddress ? (
                                 <>
                                     <Typography gutterBottom>
-                                        {`${order.shippingAddress.firstName} ${order.shippingAddress.lastName}`}
+                                        {order.customerName || 'Customer'}
                                     </Typography>
-                                    <Typography gutterBottom>{order.shippingAddress.address1}</Typography>
-                                    {order.shippingAddress.address2 && <Typography gutterBottom>{order.shippingAddress.address2}</Typography>}
-                                    <Typography gutterBottom>{`${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.zip}`}</Typography>
+                                    <Typography gutterBottom>{order.shippingAddress.street}</Typography>
+                                    <Typography gutterBottom>{`${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.postalCode}`}</Typography>
                                     <Typography gutterBottom>{order.shippingAddress.country}</Typography>
                                     <Typography gutterBottom>{order.shippingAddress.phone}</Typography>
                                 </>

@@ -4,6 +4,7 @@ import {
   loginUser,
   loginAdmin,
   getUserProfile,
+  createCustomerProfile
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -16,5 +17,6 @@ router.post('/admin/login', loginAdmin);
 
 // Protected routes
 router.get('/profile', protect, getUserProfile);
+router.post('/create-profile', protect, createCustomerProfile);
 
 export default router; 

@@ -29,14 +29,37 @@ export const createOrder = async (req, res) => {
         return res.status(404).json({ message: 'Customer not found' });
       }
     } else {
-      // Create a new customer if none exists
-      customer = await Customer.create({
-        name: req.body.customerName,
-        email: req.body.customerEmail,
-        phone: req.body.customerPhone,
-        address: shippingAddress,
-        user: req.user._id,
-      });
+      // First check if a customer with this email already exists
+      customer = await Customer.findOne({ email: req.body.customerEmail });
+      
+      if (!customer) {
+        // Only create a new customer if none exists with this email
+        try {
+          customer = await Customer.create({
+            name: req.body.customerName,
+            email: req.body.customerEmail,
+            phone: req.body.customerPhone || '',
+            address: shippingAddress,
+            user: req.user._id,
+          });
+        } catch (err) {
+          // If creation fails due to duplicate key, try to find the customer again
+          if (err.code === 11000 && err.keyPattern && err.keyPattern.email) {
+            customer = await Customer.findOne({ email: req.body.customerEmail });
+            if (!customer) {
+              return res.status(400).json({ message: 'Failed to create or find customer record' });
+            }
+          } else {
+            throw err; // Re-throw if it's a different error
+          }
+        }
+      } else {
+        // Update the existing customer's information
+        customer.name = req.body.customerName || customer.name;
+        customer.phone = req.body.customerPhone || customer.phone;
+        customer.address = shippingAddress || customer.address;
+        await customer.save();
+      }
     }
 
     // Check inventory and update stock
@@ -202,7 +225,23 @@ export const getUserOrders = async (req, res) => {
     const customer = await Customer.findOne({ user: req.user._id });
     
     if (!customer) {
-      return res.status(404).json({ message: 'Customer record not found' });
+      // Create a basic customer record if none exists
+      const newCustomer = await Customer.create({
+        name: req.user.name,
+        email: req.user.email,
+        phone: '',
+        address: {
+          street: 'Please update',
+          city: 'Please update',
+          state: 'Please update',
+          postalCode: 'Please update',
+          country: 'United States'
+        },
+        user: req.user._id
+      });
+      
+      // Return empty orders array since this is a new customer
+      return res.json([]);
     }
     
     // Find all orders for this customer

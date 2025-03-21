@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import Customer from '../models/Customer.js';
 import generateToken from '../utils/generateToken.js';
 
 /**
@@ -8,7 +9,7 @@ import generateToken from '../utils/generateToken.js';
  */
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, phone, address } = req.body;
 
     // Check if user already exists
     const userExists = await User.findOne({ email });
@@ -24,6 +25,23 @@ export const registerUser = async (req, res) => {
     });
 
     if (user) {
+      // Create a customer record for the user
+      if (address) {
+        await Customer.create({
+          name,
+          email,
+          phone: phone || '',
+          address: {
+            street: address.street || '',
+            city: address.city || '',
+            state: address.state || '',
+            postalCode: address.postalCode || '',
+            country: address.country || 'United States',
+          },
+          user: user._id,
+        });
+      }
+
       res.status(201).json({
         _id: user._id,
         name: user.name,
@@ -123,6 +141,66 @@ export const getUserProfile = async (req, res) => {
       res.json(user);
     } else {
       res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
+ * Create or update customer profile
+ * @route POST /api/auth/create-profile
+ * @access Private
+ */
+export const createCustomerProfile = async (req, res) => {
+  try {
+    const { name, phone, address } = req.body;
+    
+    // Check if customer already exists for this user
+    let customer = await Customer.findOne({ user: req.user._id });
+    
+    if (customer) {
+      // Update existing customer
+      customer.name = name || customer.name;
+      customer.phone = phone || customer.phone;
+      
+      if (address) {
+        customer.address = {
+          street: address.street || customer.address.street,
+          city: address.city || customer.address.city,
+          state: address.state || customer.address.state,
+          postalCode: address.postalCode || customer.address.postalCode,
+          country: address.country || customer.address.country || 'United States',
+        };
+      }
+      
+      await customer.save();
+      
+      res.json({
+        message: 'Customer profile updated',
+        customer
+      });
+    } else {
+      // Create new customer profile
+      customer = await Customer.create({
+        name: name || req.user.name,
+        email: req.user.email,
+        phone: phone || '',
+        address: {
+          street: address?.street || '',
+          city: address?.city || '',
+          state: address?.state || '',
+          postalCode: address?.postalCode || '',
+          country: address?.country || 'United States',
+        },
+        user: req.user._id,
+      });
+      
+      res.status(201).json({
+        message: 'Customer profile created',
+        customer
+      });
     }
   } catch (error) {
     console.error(error);

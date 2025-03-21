@@ -13,11 +13,49 @@ export const AuthProvider = ({ children }) => {
 
     // Initialize auth state from localStorage
     useEffect(() => {
-        const storedUser = localStorage.getItem('userInfo');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
-        setLoading(false);
+        const initializeAuth = async () => {
+            console.log('Initializing auth context...');
+            setLoading(true);
+
+            try {
+                const storedUser = localStorage.getItem('userInfo');
+                const token = localStorage.getItem('userToken');
+
+                console.log('Auth initialization:', {
+                    hasToken: !!token,
+                    hasStoredUser: !!storedUser
+                });
+
+                // Only set user if both token and stored user exist
+                if (storedUser && token) {
+                    try {
+                        setUser(JSON.parse(storedUser));
+                        console.log('User loaded from localStorage');
+                    } catch (err) {
+                        console.error('Failed to parse user info', err);
+                        // Clear invalid data
+                        localStorage.removeItem('userInfo');
+                        localStorage.removeItem('userToken');
+                        setUser(null);
+                    }
+                } else {
+                    // Clear any inconsistent state (e.g. token without user or vice versa)
+                    if (token && !storedUser) {
+                        console.warn('Token exists but no user data found, clearing token');
+                        localStorage.removeItem('userToken');
+                    }
+                    if (!token && storedUser) {
+                        console.warn('User data exists but no token found, clearing user data');
+                        localStorage.removeItem('userInfo');
+                    }
+                }
+            } finally {
+                setLoading(false);
+                console.log('Auth initialization complete');
+            }
+        };
+
+        initializeAuth();
     }, []);
 
     // Login function
@@ -59,7 +97,9 @@ export const AuthProvider = ({ children }) => {
 
     // Check if user is authenticated
     const isAuthenticated = () => {
-        return !!user;
+        const token = localStorage.getItem('userToken');
+        // Return true only if both token exists and user data is loaded
+        return !!token && !!user;
     };
 
     // Value provided by the context

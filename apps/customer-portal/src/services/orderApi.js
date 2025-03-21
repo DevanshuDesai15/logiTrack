@@ -10,8 +10,27 @@ export const orderService = {
   // Get user's orders (as a customer)
   getUserOrders: async () => {
     // The backend will filter orders by the authenticated user
-    const response = await api.get('/orders/my-orders');
-    return response.data;
+    console.log('Calling /orders/my-orders API endpoint');
+    
+    try {
+      // Let the interceptor handle the token - don't manually add it here
+      console.log('Making request to get user orders');
+      const response = await api.get('/orders/my-orders');
+      
+      console.log('API response received:', response.status);
+      
+      if (response.data && Array.isArray(response.data)) {
+        console.log(`Received ${response.data.length} orders`);
+      } else {
+        console.warn('Response data is not an array:', response.data);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error in getUserOrders:', error);
+      // Don't need to repeat the error logging here since the interceptor will do it
+      throw error;
+    }
   },
 
   // Get order by ID

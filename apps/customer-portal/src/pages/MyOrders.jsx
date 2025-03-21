@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
     Box,
     Container,
@@ -18,7 +18,8 @@ import {
 } from '@mui/material';
 import {
     Visibility as VisibilityIcon,
-    ArrowBack as ArrowBackIcon
+    ArrowBack as ArrowBackIcon,
+    Refresh as RefreshIcon
 } from '@mui/icons-material';
 import orderService from '../services/orderApi';
 import useAuth from '../hooks/useAuth';
@@ -46,40 +47,71 @@ const getStatusColor = (status) => {
 };
 
 const MyOrders = () => {
-    const { currentUser } = useAuth();
+    const { user, loading: authLoading } = useAuth();
+    const navigate = useNavigate();
     const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Fetch user orders on component mount
-    useEffect(() => {
-        if (currentUser) {
-            fetchOrders();
+    // Fetch orders function using useCallback to avoid recreation on each render
+    const fetchOrders = useCallback(async () => {
+        // Don't attempt to fetch if no token exists
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            setError('You must be logged in to view orders.');
+            return;
         }
-    }, [currentUser]);
 
-    // Fetch orders from API
-    const fetchOrders = async () => {
+        console.log('Starting to fetch orders...');
         setLoading(true);
+        setError(null);
+
         try {
+            console.log('Making API call to get user orders');
             const data = await orderService.getUserOrders();
-            setOrders(data);
-            setError(null);
+            console.log('Orders received:', data ? data.length : 0);
+            setOrders(data || []);
         } catch (err) {
-            setError('Failed to fetch your orders. Please try again.');
-            console.error(err);
+            console.error('Failed to fetch orders:', err);
+            setError('Failed to load orders. Please try again.');
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    if (loading) {
-        return (
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '70vh' }}>
-                <CircularProgress />
-            </Box>
-        );
-    }
+    // Check authentication and fetch orders on component mount
+    useEffect(() => {
+        console.log('Auth state:', {
+            user: !!user,
+            authLoading,
+            token: !!localStorage.getItem('userToken')
+        });
+
+        // If authentication is still loading, wait
+        if (authLoading) {
+            console.log('Authentication still loading, waiting...');
+            return;
+        }
+
+        // If not logged in, redirect to login
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            console.log('No token found, redirecting to login');
+            navigate('/login', { state: { from: '/my-orders', message: 'Please log in to view your orders' } });
+            return;
+        }
+
+        // Only fetch orders when auth is complete and we have a token
+        if (!authLoading && token) {
+            console.log('Auth complete and token exists, fetching orders');
+            fetchOrders();
+        }
+    }, [user, authLoading, navigate, fetchOrders]);
+
+    // Function to handle refresh button click
+    const handleRefresh = () => {
+        fetchOrders();
+    };
 
     return (
         <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -87,22 +119,47 @@ const MyOrders = () => {
                 My Orders
             </Typography>
 
-            <Button
-                component={RouterLink}
-                to="/dashboard"
-                startIcon={<ArrowBackIcon />}
-                sx={{ mb: 3 }}
-            >
-                Back to Dashboard
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                <Button
+                    component={RouterLink}
+                    to="/dashboard"
+                    startIcon={<ArrowBackIcon />}
+                >
+                    Back to Dashboard
+                </Button>
+
+                <Button
+                    variant="outlined"
+                    startIcon={<RefreshIcon />}
+                    onClick={handleRefresh}
+                    disabled={loading}
+                >
+                    {loading ? 'Refreshing...' : 'Refresh Orders'}
+                </Button>
+            </Box>
 
             {error && (
                 <Alert severity="error" sx={{ mb: 3 }}>
                     {error}
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        onClick={handleRefresh}
+                        sx={{ ml: 2 }}
+                    >
+                        Try Again
+                    </Button>
                 </Alert>
             )}
 
-            {orders.length === 0 ? (
+            {loading || authLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+                    <CircularProgress />
+                    <Typography sx={{ ml: 2 }}>
+                        {authLoading ? 'Checking authentication...' : 'Loading orders...'}
+                    </Typography>
+                </Box>
+            ) : orders.length === 0 ? (
                 <Paper sx={{ p: 4, textAlign: 'center' }}>
                     <Typography variant="h6" gutterBottom>
                         You haven&apos;t placed any orders yet
@@ -144,7 +201,7 @@ const MyOrders = () => {
                                             size="small"
                                         />
                                     </TableCell>
-                                    <TableCell>{order.items.length} items</TableCell>
+                                    <TableCell>{(order.orderItems || []).length} items</TableCell>
                                     <TableCell align="right">
                                         <Button
                                             component={RouterLink}
@@ -165,4 +222,4 @@ const MyOrders = () => {
     );
 };
 
-export default MyOrders; 
+export default MyOrders;
