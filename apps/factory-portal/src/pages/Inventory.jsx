@@ -188,7 +188,7 @@ const Inventory = () => {
                         variant="outlined"
                         startIcon={<RefreshIcon />}
                         onClick={fetchInventory}
-                        sx={{ mr: 1 }}
+                        sx={{ mr: 1, ml: 1 }}
                     >
                         Refresh
                     </Button>
